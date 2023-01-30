@@ -28,14 +28,14 @@ def apply_scale(color, differ):
     return tuple(map(lambda x, multiplier: min(int(round_half_up(x * multiplier)), 255), (R, G, B), differ))
 
 
-def split_set(s, sep=' '):
-    st, last_i = set(), 0
+def split(s, sep=' '):
+    st, last_i = set(), len(s) + 2
     for i, l in enumerate(s):
         if l in sep:
-            if s[i - 1] not in sep and last_i:
+            if i - last_i > 1:
                 st.add(s[last_i + 1:i])
             last_i = i
-    return st or set(s[last_i:]) or set(s)
+    return st
 
 
 def extract_color(lst, color='c'):
@@ -50,11 +50,11 @@ def extract_color(lst, color='c'):
 image_color_mod = 1
 # image_color_mod = int(input('0 - avg image color, 1 - rms image color: '))
 
-path = r'E:\Torrents\Series\Mars Red\clip\\'
+path = r'images/'
 # path = input(r'Full path to images sequence folder: ') + r'\\'
 im_lst = listdir(path)
 in_files = listdir()
-clip = r'\clip(620.32,444.53,631.98,461.3)'
+clip = r'\clip(1027,543,1151,650)'
 # clip = input(r'Clip points (e.g. \clip(81,44.33,128,68.67) or x1,y1,x2,y2): ')
 if clip.isascii():
     if 'clip' in clip:
@@ -68,23 +68,17 @@ for im_name in im_lst[1:]:
     diff = get_diff(color_first, image_color(path + im_name, clip, image_color_mod))
     diffs.append(diff)
 
+sign_color_first = input('Signs colors:\n')
+tail = sign_color_first[:sign_color_first.find('H') + 1]
+sign_color = sign_color_first.strip(tail)
 
-color_type = input('Enter what color to track (e.g. c, 2c, 3c, 4c): ')
-
-line = input('Paste colors or lines:\n')
 
 with open(f'RGB_scale_{["avg", "rms"][image_color_mod]}.txt', 'w') as output:
-    while line:
-        print(line, file=output)
+    while sign_color:
+        output.write(f'{tail}{sign_color}&\n')
 
-        line_colors = list(filter(lambda x: x[:len(color_type)] == color_type, split_set(line, '\\{}')))
         for diff in diffs:
-            new_line = str(line)
+            r, g, b = apply_scale(sign_color, diff)
+            output.write(f'{tail}{b:02X}{g:02X}{r:02X}&\n')
 
-            for color in line_colors:
-                r, g, b = apply_scale(color.strip(f'{color_type}&H'), diff)
-                new_color = fr'{color_type}&H{b:02X}{g:02X}{r:02X}&'
-                new_line = sub(color, new_color, new_line)
-
-            print(new_line, file=output)
-        line = input()
+        sign_color = input().strip(tail)
